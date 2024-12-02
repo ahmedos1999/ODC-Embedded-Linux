@@ -1,0 +1,4 @@
+handeling signals in shell script such as Ctrl+C, is done using "trap" command ,as it binds a signal to a specfic action called a handler.
+
+trap : 	Defines and activates handlers to be run when the shell receives signals
+	or other conditions.

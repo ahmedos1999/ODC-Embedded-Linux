@@ -1,0 +1,7 @@
+#!/bin/bash
+
+search_word=$1
+file_path=$2
+
+count=$(grep -ow "$search_word" "$file_path" | wc -l)
+echo "The word '$search_word' occured $count times in file '$file_path'."

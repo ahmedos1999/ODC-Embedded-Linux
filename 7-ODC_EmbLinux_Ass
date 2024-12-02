@@ -1,0 +1,7 @@
+#!/bin/bash
+
+file_path=$1
+
+sort "$file_path" | uniq > "${file_path}.no_duplicates"
+
+echo "Duplicate lines removed. The result is saved to '${file_path}.no_duplicates'."

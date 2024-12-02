@@ -1,0 +1,11 @@
+#!/bin/bash
+
+directory="$1"
+
+for file in "$directory"/*; do
+	new_name=$(echo "$file" | tr '[:upper:]' '[:lower:]') 
+	mv "$file" "$new_name"
+	echo "Renamed: $file -> $new_name"
+done
+
+echo "All filenames in '$directory' have been converted to lowercase."

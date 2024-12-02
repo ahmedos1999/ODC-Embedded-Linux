@@ -1,0 +1,10 @@
+standard output (stdout):
+	* Used to output normal or expected results of a program.
+	* By default, it is displayed in the terminal.
+	* (>>1) Save the results of a command to a file for later use.
+	* file discriptor : 1
+standard error (stderr):
+	* Used to output error messages or diagnostic information.
+	* By default, it is also displayed in the terminal but uses a separate stream.
+	* (>>2)Log errors to a separate file for debugging.
+	* file discriptor : 2
