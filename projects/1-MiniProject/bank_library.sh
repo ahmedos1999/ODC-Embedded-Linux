@@ -150,7 +150,10 @@ view_client() {
 
 # Function to display the menu
 show_menu() {
+  clear
+  echo -e "\n**********************"
   echo "Bank Client Management"
+  echo "**********************"
   echo "1. Create new client"
   echo "2. Update existing client"
   echo "3. Delete client"
@@ -166,8 +169,9 @@ show_menu() {
     3) delete_client ;;
     4) view_client ;;
     5) search_client ;;
-    6) echo "Exiting..."; exit 0 ;;
+    6) echo "Exiting..."; sleep 3; exit 0 ;;
     *) echo "Invalid option. Please try again." ;;
   esac
+  sleep 3
 }
 
