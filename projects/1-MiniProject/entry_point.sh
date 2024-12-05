@@ -6,5 +6,6 @@
         xterm -bg blue -fg grey -e "/home/ahmed/ODC-Embedded-Linux/projects/1-MiniProject/loop.sh"
     else
         echo "xterm not found. Please install it or use a compatible terminal."
+	echo "Run sudo apt install xterm "
         exit 1
     fi
