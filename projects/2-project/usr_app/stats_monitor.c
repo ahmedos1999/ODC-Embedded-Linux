@@ -5,7 +5,6 @@
 #include <ncurses.h>
 #include <time.h>
 
-// Structure remains the same as before
 typedef struct {
     unsigned long total_mem;
     unsigned long free_mem;
@@ -13,7 +12,11 @@ typedef struct {
     unsigned long used_mem;
     unsigned long cpu_usage;
     unsigned long cpu_idle;
-    char processes[1000][256];
+    // Enhanced process structure to store PID and name separately
+    struct {
+        int pid;
+        char name[256];
+    } processes[1000];
     int process_count;
 } SystemStats;
 
@@ -46,6 +49,7 @@ void draw_progress_bar(WINDOW *win, int y, int x, int width, int percentage) {
     wprintw(win, "] %d%%", percentage);
 }
 
+// Enhanced parse_stats function to separate PID and process name
 void parse_stats(const char *content, SystemStats *stats) {
     char *line = strdup(content);
     char *saveptr;
@@ -65,7 +69,9 @@ void parse_stats(const char *content, SystemStats *stats) {
         } else if (strstr(token, "CPU Idle:") != NULL) {
             sscanf(token, "CPU Idle: %lu", &stats->cpu_idle);
         } else if (strstr(token, "PID") == NULL && strlen(token) > 1) {
-            strncpy(stats->processes[stats->process_count], token, 255);
+            // Parse PID and name separately
+            sscanf(token, "%d\t%[^\n]", &stats->processes[stats->process_count].pid,
+                   stats->processes[stats->process_count].name);
             stats->process_count++;
             if (stats->process_count >= 1000) break;
         }
@@ -83,6 +89,8 @@ int main() {
     cbreak();
     noecho();
     curs_set(0);
+    keypad(stdscr, TRUE);  // Enable keyboard input
+    timeout(100);          // Set non-blocking input with 100ms timeout
     
     // Initialize color pairs
     init_pair(1, COLOR_GREEN, COLOR_BLACK);
@@ -99,8 +107,26 @@ int main() {
     WINDOW *cpu_win = newwin(6, max_x/2, 3, max_x/2);
     WINDOW *process_win = newwin(max_y-9, max_x, 9, 0);
     
+    // Initialize scroll position
+    int scroll_position = 0;
+    
     // Main loop
     while (1) {
+        // Handle keyboard input
+        int ch = getch();
+        switch (ch) {
+            case KEY_UP:
+                if (scroll_position > 0) scroll_position--;
+                break;
+            case KEY_DOWN:
+                scroll_position++;  // We'll check the maximum later
+                break;
+            case 'q':  // Add quit functionality
+                goto cleanup;
+            default:
+                break;
+        }
+        
         FILE *fp = fopen("/proc/system_stats", "r");
         if (!fp) {
             endwin();
@@ -117,10 +143,13 @@ int main() {
         SystemStats stats;
         parse_stats(content, &stats);
         
+        // Limit scroll position based on actual process count
+        int max_display = max_y - 13;  // Leave room for headers and borders
+        int max_scroll = (stats.process_count > max_display) ? 
+                        stats.process_count - max_display : 0;
+        if (scroll_position > max_scroll) scroll_position = max_scroll;
+        
         // Update header
-        time_t now = time(NULL);
-        char time_str[64];
-        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", localtime(&now));
         wclear(header_win);
         box(header_win, 0, 0);
         wattron(header_win, COLOR_PAIR(3) | A_BOLD);
@@ -151,19 +180,38 @@ int main() {
         
         draw_progress_bar(cpu_win, 3, 2, 30, stats.cpu_usage);
         
-        // Update process window
+        // Update process window with enhanced header and scrolling
         wclear(process_win);
         box(process_win, 0, 0);
         wattron(process_win, COLOR_PAIR(3) | A_BOLD);
         mvwprintw(process_win, 1, 2, "Running Processes (Total: %d)", stats.process_count);
         wattroff(process_win, COLOR_PAIR(3) | A_BOLD);
         
-        // Here's the fixed line - using direct comparison instead of min()
-        int display_limit = (stats.process_count < max_y-12) ? stats.process_count : max_y-12;
+        // Draw column headers
+        wattron(process_win, A_BOLD);
+        mvwprintw(process_win, 2, 2, "%-10s %-50s", "PID", "PROCESS NAME");
+        wattroff(process_win, A_BOLD);
+        mvwhline(process_win, 3, 1, ACS_HLINE, max_x-2);  // Separator line
         
-        // Display processes
-        for (int i = 0; i < display_limit; i++) {
-            mvwprintw(process_win, i+2, 2, "%s", stats.processes[i]);
+        // Display processes with scrolling
+        int display_count = (stats.process_count < max_display) ? 
+                           stats.process_count : max_display;
+        
+        for (int i = 0; i < display_count; i++) {
+            int idx = i + scroll_position;
+            if (idx < stats.process_count) {
+                mvwprintw(process_win, i+4, 2, "%-10d %-50s",
+                         stats.processes[idx].pid,
+                         stats.processes[idx].name);
+            }
+        }
+        
+        // Add scroll indicators if necessary
+        if (scroll_position > 0) {
+            mvwprintw(process_win, 4, max_x-3, "↑");
+        }
+        if (scroll_position < max_scroll) {
+            mvwprintw(process_win, max_y-11, max_x-3, "↓");
         }
         
         // Refresh all windows
@@ -172,9 +220,10 @@ int main() {
         wrefresh(cpu_win);
         wrefresh(process_win);
         
-        usleep(500000);  // Update every 500ms
+        usleep(50000);  // Reduced sleep time for more responsive scrolling
     }
     
+cleanup:
     // Cleanup
     delwin(header_win);
     delwin(memory_win);

@@ -1,1 +1,1 @@
-/home/ahmed/Desktop/claude_ker/system_stats.o
+/home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/system_stats.o

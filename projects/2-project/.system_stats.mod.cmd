@@ -1,0 +1,1 @@
+savedcmd_/home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/system_stats.mod := printf '%s\n'   system_stats.o | awk '!x[$$0]++ { print("/home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/"$$0) }' > /home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/system_stats.mod
