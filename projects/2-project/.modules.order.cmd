@@ -1,0 +1,1 @@
+savedcmd_/home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/modules.order := {   echo /home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/system_stats.o; :; } > /home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/modules.order

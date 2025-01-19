@@ -12,7 +12,7 @@ typedef struct {
     unsigned long used_mem;
     unsigned long cpu_usage;
     unsigned long cpu_idle;
-    // Enhanced process structure to store PID and name separately
+    
     struct {
         int pid;
         char name[256];
@@ -20,7 +20,7 @@ typedef struct {
     int process_count;
 } SystemStats;
 
-// Previous helper functions remain the same
+
 void format_memory(unsigned long kb, char *buffer) {
     if (kb > 1024*1024) {
         sprintf(buffer, "%.2f GB", (float)kb / (1024*1024));
@@ -49,7 +49,7 @@ void draw_progress_bar(WINDOW *win, int y, int x, int width, int percentage) {
     wprintw(win, "] %d%%", percentage);
 }
 
-// Enhanced parse_stats function to separate PID and process name
+
 void parse_stats(const char *content, SystemStats *stats) {
     char *line = strdup(content);
     char *saveptr;
@@ -83,14 +83,14 @@ void parse_stats(const char *content, SystemStats *stats) {
 }
 
 int main() {
-    // Initialize ncurses
+    /* Initializing ncurses */
     initscr();
     start_color();
     cbreak();
     noecho();
     curs_set(0);
     keypad(stdscr, TRUE);  // Enable keyboard input
-    timeout(100);          // Set non-blocking input with 100ms timeout
+    timeout(20);          // Set non-blocking input with 20ms timeout
     
     // Initialize color pairs
     init_pair(1, COLOR_GREEN, COLOR_BLACK);
@@ -98,7 +98,7 @@ int main() {
     init_pair(3, COLOR_CYAN, COLOR_BLACK);
     init_pair(4, COLOR_YELLOW, COLOR_BLACK);
     
-    // Create windows
+    /* Create a window*/
     int max_y, max_x;
     getmaxyx(stdscr, max_y, max_x);
     
@@ -107,12 +107,11 @@ int main() {
     WINDOW *cpu_win = newwin(6, max_x/2, 3, max_x/2);
     WINDOW *process_win = newwin(max_y-9, max_x, 9, 0);
     
-    // Initialize scroll position
+    /* scroll position */
     int scroll_position = 0;
     
-    // Main loop
     while (1) {
-        // Handle keyboard input
+        /* Handle keyboard user input*/
         int ch = getch();
         switch (ch) {
             case KEY_UP:
@@ -143,8 +142,8 @@ int main() {
         SystemStats stats;
         parse_stats(content, &stats);
         
-        // Limit scroll position based on actual process count
-        int max_display = max_y - 13;  // Leave room for headers and borders
+        /*Limit scroll position based on actual processes count*/
+        int max_display = max_y - 13;       
         int max_scroll = (stats.process_count > max_display) ? 
                         stats.process_count - max_display : 0;
         if (scroll_position > max_scroll) scroll_position = max_scroll;
@@ -180,7 +179,7 @@ int main() {
         
         draw_progress_bar(cpu_win, 3, 2, 30, stats.cpu_usage);
         
-        // Update process window with enhanced header and scrolling
+        // Update process window
         wclear(process_win);
         box(process_win, 0, 0);
         wattron(process_win, COLOR_PAIR(3) | A_BOLD);
@@ -206,7 +205,7 @@ int main() {
             }
         }
         
-        // Add scroll indicators if necessary
+        // scroll indicators 
         if (scroll_position > 0) {
             mvwprintw(process_win, 4, max_x-3, "↑");
         }

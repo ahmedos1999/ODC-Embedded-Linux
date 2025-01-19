@@ -1,0 +1,1 @@
+savedcmd_/home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/Module.symvers -T /home/ahmed/Desktop/my_repos/ODC-Embedded-Linux/projects/2-project/modules.order -i Module.symvers -e 

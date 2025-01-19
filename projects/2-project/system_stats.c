@@ -1,22 +1,18 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/proc_fs.h>
-#include <linux/seq_file.h>
-#include <linux/mm.h>
-#include <linux/sched.h>
-#include <linux/sched/signal.h>
-#include <linux/cpumask.h>
-#include <linux/slab.h>
-#include <linux/time.h>
-#include <linux/time_namespace.h>
+#include <linux/module.h>	    /* Kernel Module Header */
+#include <linux/kernel.h>	    /* Kernel utilities */
+#include <linux/proc_fs.h>	    /* /proc file system */
+#include <linux/seq_file.h>	    /* Sequntial files */
+#include <linux/mm.h>		    /* Memory Managment */
+#include <linux/sched.h>	    /* Task Scheduler */
+#include <linux/sched/signal.h>	/* signal Handling*/
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Your Name");
+MODULE_AUTHOR("Ahmed Osama");
 MODULE_DESCRIPTION("System Statistics Module");
 
 static struct proc_dir_entry *stats_entry;
 
-// Structure to store CPU statistics
+/* Structure to store CPU statistics */
 struct cpu_stats {
     unsigned long long user;
     unsigned long long nice;
@@ -33,27 +29,27 @@ struct cpu_stats {
 static struct cpu_stats last_cpu_stats;
 static bool first_reading = true;
 
-// Helper function to get memory statistics
-static void get_memory_stats(unsigned long *total, unsigned long *free, unsigned long *cached)
+/* Helper function to get Memory statistics */
+static void get_memory_stats (unsigned long *total, unsigned long *free, unsigned long *cached)
 {
     struct sysinfo si;
-    si_meminfo(&si);
+    si_meminfo(&si);	/* Total memory, Free memory, Number of processes */
     
-    *total = si.totalram << (PAGE_SHIFT - 10);  // Convert to KB
-    *free = si.freeram << (PAGE_SHIFT - 10);
-    *cached = global_node_page_state(NR_FILE_PAGES) << (PAGE_SHIFT - 10);
+    *total = si.totalram << (PAGE_SHIFT - 10); 			 /* Total physical memory ,Convert to KB 2^10 = 1024 */
+    *free = si.freeram << (PAGE_SHIFT - 10);			/* Free physcial memory */
+    *cached = global_node_page_state(NR_FILE_PAGES) << (PAGE_SHIFT - 10); /* cahced memory pages  */
 }
 
-// Helper function to read and parse CPU statistics from /proc/stat
+/* Helper function to read and parse CPU statistics from /proc/stat */
 static void get_cpu_stats(struct cpu_stats *stats)
 {
-    struct file *fp;
+    struct file *fp;        /* file pointer*/
     char buf[256];
     char *ptr;
     ssize_t bytes_read;
     loff_t pos = 0;
 
-    // Initialize stats to 0
+    
     memset(stats, 0, sizeof(struct cpu_stats));
 
     // Open /proc/stat
@@ -81,7 +77,7 @@ static void get_cpu_stats(struct cpu_stats *stats)
     filp_close(fp, NULL);
 }
 
-// Calculate CPU usage percentage
+/* CPU Calculations */
 static void calculate_cpu_usage(struct cpu_stats *prev, struct cpu_stats *curr,
                               unsigned long *cpu_use, unsigned long *cpu_idle)
 {
@@ -106,54 +102,50 @@ static void calculate_cpu_usage(struct cpu_stats *prev, struct cpu_stats *curr,
     
     // Calculate percentage
     if (total_time > 0) {
-        *cpu_use = (active_time * 100) / total_time;
-        *cpu_idle = 100 - *cpu_use;
+        *cpu_use = (active_time / total_time) * 100ULL;
+        *cpu_idle = 100ULL - *cpu_use;
     } else {
-        *cpu_use = 0;
-        *cpu_idle = 100;
+        *cpu_use = 0ULL;
+        *cpu_idle = 100ULL;
     }
 }
 
-// Callback function for reading the proc file
-static int stats_show(struct seq_file *m, void *v)
+/* Callback function for reading from /proc */
+static int stats_show(struct seq_file *file_seq, void *v)
 {
     unsigned long total_mem, free_mem, cached_mem;
     unsigned long cpu_use = 0, cpu_idle = 0;
     struct cpu_stats curr_cpu_stats;
     struct task_struct *task;
     
-    // Get memory statistics
     get_memory_stats(&total_mem, &free_mem, &cached_mem);
     
-    // Get current CPU statistics
     get_cpu_stats(&curr_cpu_stats);
     
-    // Calculate CPU usage if we have previous readings
     if (!first_reading) {
         calculate_cpu_usage(&last_cpu_stats, &curr_cpu_stats, &cpu_use, &cpu_idle);
     }
     
-    // Store current reading for next time
     memcpy(&last_cpu_stats, &curr_cpu_stats, sizeof(struct cpu_stats));
     first_reading = false;
     
-    // Print memory information
-    seq_printf(m, "Memory Statistics:\n");
-    seq_printf(m, "Total Memory: %lu KB\n", total_mem);
-    seq_printf(m, "Free Memory: %lu KB\n", free_mem);
-    seq_printf(m, "Cached Memory: %lu KB\n\n", cached_mem);
+
+    seq_printf(file_seq, "Memory Statistics:\n");
+    seq_printf(file_seq, "Total Memory: %lu KB\n", total_mem);
+    seq_printf(file_seq, "Free Memory: %lu KB\n", free_mem);
+    seq_printf(file_seq, "Cached Memory: %lu KB\n\n", cached_mem);
     
-    // Print CPU information
-    seq_printf(m, "CPU Statistics:\n");
-    seq_printf(m, "CPU Usage: %lu%%\n", cpu_use);
-    seq_printf(m, "CPU Idle: %lu%%\n\n", cpu_idle);
+
+    seq_printf(file_seq, "CPU Statistics:\n");
+    seq_printf(file_seq, "CPU Usage: %lu%%\n", cpu_use);
+    seq_printf(file_seq, "CPU Idle: %lu%%\n\n", cpu_idle);
     
-    // Print process information
-    seq_printf(m, "Process List:\n");
-    seq_printf(m, "PID\tCOMMAND\n");
+
+    seq_printf(file_seq, "Process List:\n");
+    seq_printf(file_seq, "PID\tCOMMAND\n");
     
     for_each_process(task) {
-        seq_printf(m, "%d\t%s\n", task->pid, task->comm);
+        seq_printf(file_seq, "%d\t%s\n", task->pid, task->comm);
     }
     
     return 0;
@@ -164,6 +156,7 @@ static int stats_open(struct inode *inode, struct file *file)
     return single_open(file, stats_show, NULL);
 }
 
+/* Proc file operations */
 static const struct proc_ops stats_fops = {
     .proc_open = stats_open,
     .proc_read = seq_read,
@@ -171,20 +164,21 @@ static const struct proc_ops stats_fops = {
     .proc_release = single_release,
 };
 
+/* Module Initialization */ 
 static int __init stats_init(void)
 {
-    stats_entry = proc_create("system_stats", 0444, NULL, &stats_fops);
+    stats_entry = proc_create("system_stats", 0444, NULL, &stats_fops); /* creating a proc file , RO permession*/ 
     if (!stats_entry) {
-        return -ENOMEM;
+        return -ENOMEM; /* memory allocation error */
     }
     first_reading = true;
     printk(KERN_INFO "System Statistics Module loaded\n");
     return 0;
 }
-
+/* Module Exit */
 static void __exit stats_exit(void)
 {
-    proc_remove(stats_entry);
+    proc_remove(stats_entry);   /* Removing the proc file */
     printk(KERN_INFO "System Statistics Module unloaded\n");
 }
 
