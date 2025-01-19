@@ -219,7 +219,7 @@ int main() {
         wrefresh(cpu_win);
         wrefresh(process_win);
         
-        usleep(50000);  // Reduced sleep time for more responsive scrolling
+        usleep(5000);  // Sleep time
     }
     
 cleanup:
